@@ -5,6 +5,8 @@
 
 #include <iostream>
 #include <linalg.h>
+using namespace linalg::aliases;
+using namespace linalg::ostream_overloads;
 
 #define TINYOBJLOADER_IMPLEMENTATION // define this in only *one* .cc
 #include "tiny_obj_loader.h"
@@ -19,7 +21,7 @@ cg::ObjParser::ObjParser(std::string filename) :
 
 cg::ObjParser::~ObjParser()
 {
-	throw std::runtime_error("Not implemented yet");
+	faces.clear();
 }
 
 void cg::ObjParser::Parse()
@@ -42,7 +44,7 @@ void cg::ObjParser::Parse()
 	}
 
 	if (!ret) {
-		exit(1);
+		throw std::runtime_error("Can't parse OBJ file");
 	}
 
 	// Loop over shapes
@@ -81,17 +83,17 @@ cg::Projections::Projections(unsigned short width, unsigned short height, std::s
 	parser->Parse();
 
 	cb = {};
-	cb.World = float4x4 { {1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 1, -2, 1} }
+	cb.World = float4x4 { {1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, -2, 1} };
 
 	float3 eye {0, 0, 1};
 	float3 at {0, 0, 0};
-	float3 up {0, 1, 0}
+	float3 up {0, 1, 0};
 
 	float3 zaxis = normalize(at - eye);
 	float3 xaxis = normalize(cross(up, zaxis));
 	float3 yaxis = cross(zaxis, xaxis);
 
-	cb.View = float4 { 
+	cb.View = float4x4 { 
 		{xaxis.x, xaxis.y, xaxis.z, -dot(xaxis, eye)},
 		{yaxis.x, yaxis.y, yaxis.z, -dot(yaxis, eye)},
 		{zaxis.x, zaxis.y, zaxis.z, -dot(zaxis, eye)},
@@ -100,8 +102,8 @@ cg::Projections::Projections(unsigned short width, unsigned short height, std::s
 
 	float z_near = 1.f;
 	float z_far = 10.f;
-	float near_height = 1.f;
-	float near_width = width / (float) height;
+	float near_height = (float)1;
+	float near_width = (float)1;
 
 	cb.Projection = float4x4 {
 		{2 * z_near / near_width, 0, 0, 0},
@@ -118,13 +120,9 @@ cg::Projections::~Projections()
 
 void cg::Projections::DrawScene()
 {
-	Rasterizer(face);
-
 	for (auto face : parser->GetFaces()) {
-		for (int i = 0; i < 3; i++) { face.vertexes[i] = VertexShader(face.vertexes[i]); }
-		Rasterizer(vs_out);
-		//auto ps_out = PixelShader(raster_out);
-		//OutputMerger(ps_out);
+		for (unsigned i = 0; i < 3; i++) { face.vertexes[i] = VertexShader(face.vertexes[i]); }
+		Rasterizer(face);
 	}
 }
 
@@ -132,17 +130,17 @@ void cg::Projections::Rasterizer(face face) {
 	// To screen space
 	unsigned x_center = width / 2;
 	unsigned y_center = height / 2;
-	unsigned scale = std::main(x_center, y_center) - 1;
+	unsigned scale = std::min(x_center, y_center) - 1;
 
 	// From homogeneous to cartezian
 	for (unsigned i = 0; i < 3; i++) {
 		face.vertexes[i] /= face.vertexes[i].w;
 		face.vertexes[i].x = std::clamp(x_center + scale * face.vertexes[i].x, 0.f, width - 1.f);
-		face.vertexes[i].y = std::clamp(x_center + scale * face.vertexes[i].y, 0.f, height - 1.f);
+		face.vertexes[i].y = std::clamp(y_center + scale * face.vertexes[i].y, 0.f, height - 1.f);
 	}
 
 	DrawLine(face.vertexes[0].x, face.vertexes[0].y, face.vertexes[1].x, face.vertexes[1].y, color(255, 0, 0));
-	DrawLine(face.vertexes[1].x, face.vertexes[2].y, face.vertexes[2].x, face.vertexes[2].y, color(0, 255, 0));
+	DrawLine(face.vertexes[1].x, face.vertexes[1].y, face.vertexes[2].x, face.vertexes[2].y, color(0, 255, 0));
 	DrawLine(face.vertexes[2].x, face.vertexes[2].y, face.vertexes[0].x, face.vertexes[0].y, color(0, 0, 255));
 }
 
