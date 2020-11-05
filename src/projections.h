@@ -16,6 +16,7 @@ namespace cg
 	struct face
 	{
 		float4 vertexes[3];
+		unsigned primitive_id;
 	};
 
 	class ObjParser
@@ -52,8 +53,10 @@ namespace cg
 		ObjParser* parser;
 		ConstantBuffer cb;
 
-		void Rasterizer(face face);
 		float4 VertexShader(float4 face);
+		void Rasterizer(face face);
+		virtual void DrawTriangle(face face);
+		
 	};
 
 }

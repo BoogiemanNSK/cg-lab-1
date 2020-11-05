@@ -83,7 +83,7 @@ cg::Projections::Projections(unsigned short width, unsigned short height, std::s
 	parser->Parse();
 
 	cb = {};
-	cb.World = float4x4 { {1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, -2, 1} };
+	cb.World = float4x4 { {1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, -1, -3, 1} };
 
 	float3 eye {0, 0, 1};
 	float3 at {0, 0, 0};
@@ -120,7 +120,9 @@ cg::Projections::~Projections()
 
 void cg::Projections::DrawScene()
 {
+	unsigned id = 0;
 	for (auto face : parser->GetFaces()) {
+		face.primitive_id = id++;
 		for (unsigned i = 0; i < 3; i++) { face.vertexes[i] = VertexShader(face.vertexes[i]); }
 		Rasterizer(face);
 	}
@@ -135,10 +137,14 @@ void cg::Projections::Rasterizer(face face) {
 	// From homogeneous to cartezian
 	for (unsigned i = 0; i < 3; i++) {
 		face.vertexes[i] /= face.vertexes[i].w;
-		face.vertexes[i].x = std::clamp(x_center + scale * face.vertexes[i].x, 0.f, width - 1.f);
-		face.vertexes[i].y = std::clamp(y_center + scale * face.vertexes[i].y, 0.f, height - 1.f);
+		face.vertexes[i].x = std::clamp(x_center - scale * face.vertexes[i].x, 0.f, width - 1.f);
+		face.vertexes[i].y = std::clamp(y_center - scale * face.vertexes[i].y, 0.f, height - 1.f);
 	}
 
+	DrawTriangle(face);
+}
+
+void cg::Projections::DrawTriangle(face face) {
 	DrawLine(face.vertexes[0].x, face.vertexes[0].y, face.vertexes[1].x, face.vertexes[1].y, color(255, 0, 0));
 	DrawLine(face.vertexes[1].x, face.vertexes[1].y, face.vertexes[2].x, face.vertexes[2].y, color(0, 255, 0));
 	DrawLine(face.vertexes[2].x, face.vertexes[2].y, face.vertexes[0].x, face.vertexes[0].y, color(0, 0, 255));

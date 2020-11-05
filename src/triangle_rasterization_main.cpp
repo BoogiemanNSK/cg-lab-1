@@ -6,7 +6,8 @@ int main(int argc, char* argv[])
 {
     try
     {
-        cg::TriangleRasterization* render = new cg::TriangleRasterization(1920, 1080, "models/cube.obj");
+        //cg::TriangleRasterization* render = new cg::TriangleRasterization(1920, 1080, "models/cube.obj");
+    	cg::TriangleRasterization* render = new cg::TriangleRasterization(1920, 1080, "models/CornellBox-Original.obj");
 
         render->Clear();
 
